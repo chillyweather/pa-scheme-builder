@@ -125,6 +125,10 @@ export default function () {
     await figma.clientStorage.setAsync(MODEL_KEY, model)
   })
 
+  on('RESIZE_WINDOW' as any, (size: { width: number; height: number }) => {
+    figma.ui.resize(size.width, size.height)
+  })
+
   on(EVENT.GENERATE_SPEC, () => {
     const selection = figma.currentPage.selection
 

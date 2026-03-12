@@ -1,4 +1,4 @@
-import { Button, Container, render, Textbox, VerticalSpace } from '@create-figma-plugin/ui'
+import { Button, Container, render, Textbox, VerticalSpace, useWindowResize } from '@create-figma-plugin/ui'
 import { emit, on } from '@create-figma-plugin/utilities'
 import { h } from 'preact'
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
@@ -22,6 +22,18 @@ function Plugin() {
   const modelRef = useRef(model)
   tokenRef.current = token
   modelRef.current = model
+  useWindowResize(
+    (size: { width: number; height: number }) => {
+      emit('RESIZE_WINDOW' as any, size)
+    },
+    {
+      minWidth: 320,
+      minHeight: 300,
+      maxWidth: 800,
+      maxHeight: 1200,
+      resizeDirection: 'both',
+    }
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [specJson, setSpecJson] = useState('')
