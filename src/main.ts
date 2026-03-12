@@ -1,7 +1,11 @@
 import { emit, on, showUI } from '@create-figma-plugin/utilities'
+import { EVENT } from './types'
+import { createEmptySpec, deepMerge } from './schema'
+import { extractFactualData, FactualData } from './factual-extractor'
 
 const VALID_TYPES = ['COMPONENT_SET']
 const TOKEN_KEY = 'google_ai_studio_token'
+const MODEL_KEY = 'gemini_model'
 
 // Keys that lead to circular refs or parent traversal
 const SKIP_KEYS = new Set([
@@ -73,15 +77,15 @@ function serializeNode(node: BaseNode, depth = 0, seen = new WeakSet()): any {
   return result
 }
 
-let lastExtractedData: Record<string, any> | null = null
+let lastFactualData: FactualData | null = null
 
 export default function () {
   showUI({
-    height: 240,
-    width: 240
+    height: 500,
+    width: 480,
   })
 
-  on('CHECK_SELECTION', () => {
+  on(EVENT.CHECK_SELECTION, () => {
     const selection = figma.currentPage.selection
 
     if (selection.length === 0) {
@@ -102,17 +106,53 @@ export default function () {
     }
 
     console.log(`Extracting props from: ${node.name} (${node.id})`)
-    lastExtractedData = serializeNode(node)
-    console.log(JSON.stringify(lastExtractedData, null, 2))
+    const serialized = serializeNode(node)
+    console.log(JSON.stringify(serialized, null, 2))
   })
 
-  on('GET_TOKEN', async () => {
+  on(EVENT.GET_TOKEN, async () => {
     const savedToken = await figma.clientStorage.getAsync(TOKEN_KEY)
-    emit('LOAD_TOKEN', savedToken || '')
+    const savedModel = await figma.clientStorage.getAsync(MODEL_KEY)
+    emit(EVENT.LOAD_TOKEN, savedToken || '', savedModel || '')
   })
 
-  on('SAVE_TOKEN', async (token: string) => {
+  on(EVENT.SAVE_TOKEN, async (token: string) => {
     await figma.clientStorage.setAsync(TOKEN_KEY, token)
     console.log('AI token saved to client storage')
+  })
+
+  on('SAVE_MODEL', async (model: string) => {
+    await figma.clientStorage.setAsync(MODEL_KEY, model)
+  })
+
+  on(EVENT.GENERATE_SPEC, () => {
+    const selection = figma.currentPage.selection
+
+    if (selection.length !== 1) {
+      emit(EVENT.SPEC_ERROR, 'Please select exactly one COMPONENT_SET node.')
+      return
+    }
+
+    const node = selection[0]
+
+    if (!VALID_TYPES.includes(node.type)) {
+      emit(EVENT.SPEC_ERROR, `Selected node is a ${node.type}, expected COMPONENT_SET.`)
+      return
+    }
+
+    const serialized = serializeNode(node)
+    const extracted = extractFactualData(serialized)
+    lastFactualData = extracted
+
+    // Send factual data + node summary to UI so it can call Gemini
+    emit(EVENT.EXTRACTED_DATA, extracted.factual, extracted.nodeSummary)
+  })
+
+  on(EVENT.GEMINI_RESULT, (llmResult: Record<string, any>) => {
+    const template = createEmptySpec()
+    // Merge: template ← LLM result ← factual data (factual wins)
+    const factual = lastFactualData?.factual || {}
+    const final = deepMerge(template, llmResult as any, factual as any)
+    emit(EVENT.SPEC_COMPLETE, final)
   })
 }
