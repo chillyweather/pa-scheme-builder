@@ -1,0 +1,242 @@
+{
+  "meta": {
+    "name": "Code Editor",
+    "category": "Input",
+    "status": "draft",
+    "versionIntroduced": "1.1.0",
+    "lastUpdated": "2026-02-16",
+    "links": {
+      "figma": "https://www.figma.com/file/unity-library?node-id=code-editor",
+      "storybookAngular": "",
+      "storybookReact": "",
+      "playground": "",
+      "docs": ""
+    },
+    "relatedComponents": [
+      "Text Area",
+      "Badge",
+      "Inline Message"
+    ]
+  },
+  "overview": {
+    "description": "A multi-line editor for structured code and scripts, providing syntax highlighting, line numbering, and contextual validation feedback.",
+    "useCases": [
+      "Writing automation scripts for Cortex XSIAM",
+      "Editing JSON configuration files",
+      "Viewing read-only system logs with syntax highlighting"
+    ],
+    "whenNotToUse": [
+      "Single-line text inputs (use Text Input)",
+      "Simple multi-line plain text without syntax requirements (use Text Area)"
+    ],
+    "alternatives": [
+      "Text Area"
+    ]
+  },
+  "formatting": {
+    "anatomy": {
+      "summary": "A structured container comprising a gutter for metadata and a main canvas for code entry.",
+      "parts": [
+        {
+          "name": "Root",
+          "role": "Main container for the editor",
+          "required": true,
+          "slots": [],
+          "notes": "Uses surface-semantic-tokens for background."
+        },
+        {
+          "name": "Gutter",
+          "role": "Area for line numbers and validation indicators",
+          "required": true,
+          "slots": [
+            "Validation Icon"
+          ],
+          "notes": "Fixed width based on spacing tokens."
+        },
+        {
+          "name": "Code Canvas",
+          "role": "The interactive text entry area",
+          "required": true,
+          "slots": [
+            "Syntax Highlighted Text"
+          ],
+          "notes": "Must use monospaced font stack."
+        }
+      ]
+    },
+    "variants": [
+      {
+        "name": "read-only",
+        "type": "boolean",
+        "values": [
+          true,
+          false
+        ],
+        "default": false,
+        "notes": "Removes caret and prevents keyboard input."
+      }
+    ],
+    "alignment": {
+      "supported": false,
+      "options": [],
+      "default": "",
+      "notes": "Code editors are always start-aligned."
+    },
+    "placement": {
+      "supported": false,
+      "options": [],
+      "default": "",
+      "notes": ""
+    }
+  },
+  "behavior": {
+    "interactionModel": "Standard text manipulation with code-specific additions like tabbing and bracket matching.",
+    "states": [
+      {
+        "state": "default",
+        "trigger": "none",
+        "expectedResponse": "Normal display with syntax highlighting.",
+        "notes": ""
+      },
+      {
+        "state": "focus",
+        "trigger": "Click or Tab into canvas",
+        "expectedResponse": "Visible focus ring around the root container.",
+        "notes": "Focus-visible is mandatory[cite: 237, 280]."
+      },
+      {
+        "state": "invalid",
+        "trigger": "Linter detects error or manual validation trigger",
+        "expectedResponse": "Root border changes to status-danger; Gutter displays error icons.",
+        "notes": "Must include non-color signals for errors[cite: 238]."
+      }
+    ],
+    "keyboard": {
+      "focusOrder": [
+        "Code Canvas"
+      ],
+      "shortcuts": [
+        "Tab: Indent code",
+        "Shift+Tab: Outdent code",
+        "Cmd/Ctrl+F: Search within code"
+      ],
+      "notes": "Keyboard interaction must be fully supported[cite: 235]."
+    },
+    "mouse": {
+      "notes": "Click gutter to select entire line; Click and drag for range selection."
+    },
+    "touch": {
+      "notes": "Standard OS text selection handles apply."
+    },
+    "emptyAndErrorHandling": {
+      "emptyState": "Displays optional placeholder or empty lines.",
+      "errorState": "Validation status indicators appear in the gutter next to affected lines.",
+      "loadingState": "Skeleton state for large file hydration.",
+      "notes": ""
+    }
+  },
+  "properties": [
+    {
+      "name": "language",
+      "type": "string",
+      "required": true,
+      "default": "python",
+      "description": "Defines syntax highlighting rules (e.g., 'python', 'json', 'yaml').",
+      "constraints": [],
+      "examples": [
+        "python",
+        "javascript"
+      ]
+    },
+    {
+      "name": "validation-status",
+      "type": "enum",
+      "required": false,
+      "default": "default",
+      "description": "Sets the semantic state of specific code rows or the entire editor.",
+      "constraints": [
+        "default",
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "error"
+      ]
+    },
+    {
+      "name": "show-line-numbers",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "description": "Toggles the visibility of the line counter in the gutter.",
+      "constraints": [],
+      "examples": [
+        true
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "if": "validation-status is 'error'",
+      "then": "Show danger icon in gutter and change border color",
+      "notes": ""
+    }
+  ],
+  "layoutConstraints": {
+    "responsiveRules": [
+      "Full width of parent container"
+    ],
+    "minWidth": "320px",
+    "maxWidth": "none",
+    "heightRules": "Variable or fixed with internal scrolling.",
+    "widthRules": "Fluid[cite: 459].",
+    "wrappingRules": "Toggleable via property; default is no-wrap.",
+    "truncationRules": "Horizontal scroll preferred over truncation.",
+    "spacingRules": "Density-aligned internal padding[cite: 444].",
+    "doNotAllow": [
+      "Custom font sizes",
+      "Decorative backgrounds"
+    ]
+  },
+  "contentGuidelines": {
+    "labelRules": [
+      "Use sentence case for field labels above the editor."
+    ],
+    "helperTextRules": [
+      "Provide contextual info on supported shortcuts if relevant."
+    ],
+    "placeholderRules": [
+      "'Enter code here...'"
+    ],
+    "errorMessageRules": [
+      "Factual, neutral, and actionable per Unity standards[cite: 1296]."
+    ],
+    "toneNotes": "Professional and precise[cite: 323]."
+  },
+  "accessibility": {
+    "role": "textbox",
+    "aria": [
+      "aria-multiline=\"true\"",
+      "aria-readonly"
+    ],
+    "keyboardSupport": [
+      "Tab trapping must be handled carefully with an escape sequence."
+    ],
+    "focusVisible": {
+      "required": true,
+      "notes": ""
+    },
+    "contrastNotes": "Syntax highlighting colors must meet AA requirements[cite: 239].",
+    "nonColorSignalNotes": "Icons must accompany color-based validation in the gutter[cite: 1232]."
+  },
+  "dosDonts": {
+    "dos": [
+      "Use monospaced fonts for all code content.",
+      "Provide line-level validation for syntax errors."
+    ],
+    "donts": [
+      "Use 'Oops' or 'Error!' in validation messages[cite: 1308].",
+      "Allow horizontal scrolling to obscure the gutter."
+    ]
+  }
+}
